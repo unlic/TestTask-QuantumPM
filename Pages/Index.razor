@@ -1,0 +1,97 @@
+﻿@page "/"
+@inject TestTask.Models.Repositiry.IRepository repository;
+<h1 class="row gray-background" text-align: justify>
+    <button class="btn btn-info col-3" @onclick="(()=>isCreateNewNote = true)">Create new note</button>
+    <input class="input-group-text col-6" id="search" placeholder ="Enter search term" name="str" @onchange ="((ChangeEventArgs e)=>OnSearch(e.Value.ToString()))"/>
+    <span class="form-text" style="font-size:20px; align-self:center">  Total notes: @notes.Count() </span>
+</h1>
+
+
+@if (isCreateNewNote)
+{
+    <EditForm Model="note">
+        <InputText class="form-control" placeholder="Enter title" @bind-Value="note.Title"></InputText>
+        <InputTextArea class="form-control" rows="10" placeholder="Enter content" @bind-Value="note.NoteContent"></InputTextArea>
+        <button class="btn badge-success" @onclick="(()=>AddNewNote(note))">Create</button>
+        <button type="reset" class="btn badge-danger" @onclick="(() => isCreateNewNote = false)">Cancel</button>
+        <hr />
+    </EditForm>
+}
+
+@foreach (var item in notes)
+{
+    <EditForm Model="item">
+
+        <div class="gray-background">
+            <div class="row">
+                <div class="col-5" >
+                    @item.Title
+                </div>
+                <div class="col-5">
+                     Created @((DateTime.Now - item.DateCreate).Days) day ago
+                </div>
+                <div class="col-2">
+
+                    <button class="btn btn-info" name="buttonView" @onclick="(()=>OnViewNote(item.Id))">@(item.NoteIsView ? "Hide Note" : "View Note" ) </button>
+                    <button class="btn btn-success" @onclick="(()=>OnEditNote(ref isMakeEdit))">Edit Note</button>
+                </div>
+            </div>
+            @if (item.NoteIsView)
+            {
+                <div>
+                    @if (isMakeEdit)
+                    {
+                        <InputTextArea class="form-control" rows="4" r @bind-Value="item.NoteContent"></InputTextArea>
+                    }
+                    else
+                    {
+                        <InputTextArea class="form-control" rows="4" readonly="readonly" @bind-Value="item.NoteContent"></InputTextArea>
+                    }
+
+                </div>
+            }
+        </div>
+    </EditForm>
+}
+
+
+@code{
+    bool isMakeEdit = false;
+    bool isCreateNewNote = false;
+    private IEnumerable<Note> notes = new List<Note>();
+    private Note note = new();
+
+    protected override void OnInitialized()
+    {
+        notes = repository.GetAllNotes();
+
+    }
+
+    private void AddNewNote(Note newNote)
+    {
+        if ((!string.IsNullOrWhiteSpace(newNote.Title)) && (!string.IsNullOrWhiteSpace(newNote.NoteContent)))
+        {
+            repository.AddNote(newNote.Title, newNote.NoteContent);
+            newNote = null;
+        }
+    }
+
+    private void OnViewNote(int id)
+    {
+        isMakeEdit = false;
+        repository.ViewNote(id);
+    }
+    
+
+    private void OnEditNote(ref bool isEdit)
+    {
+        isEdit = !isEdit;
+    }
+    private void OnSearch(string searchName)
+    {
+        notes = repository.SearchNotes(searchName);
+
+    }
+
+}
+
